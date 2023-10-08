@@ -85,7 +85,7 @@ app.get("/api/flights/:countryName", async (req, res) => {
         const curFlights = await flightPlanner(
           departureCode,
           curAirportCode,
-          "2023-05-08"
+          "2023-12-31"
         );
         console.log(curFlights);
         availableFlights = availableFlights.concat(curFlights);
@@ -805,7 +805,8 @@ async function getOptimalOrderOfVisit(attractionCoordinates) {
     optimalOrder.push(nearestNeighborIndex);
   }
   const orderedAttractions = optimalOrder.map(
-    (index, order) => `${order + 1}. ${attractionCoordinates[index].attraction}`
-  );
+    (index) => `${index + 1}. ${attractionCoordinates[index].attraction}`
+);
+
   return orderedAttractions;
 }
