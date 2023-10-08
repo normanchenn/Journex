@@ -223,7 +223,7 @@ app.get("/api/cohere/citySummary/:city", async (req, res) => {
     const { city } = req.params;
     const response = await cohere.generate({
       prompt: `Give me a summary of ${city}.`,
-      model: "ca5f4bac-9c09-4770-bf7a-d043739e82a7-ft",
+      model: process.env.COHERE_CITY_SUMMARY,
       max_tokens: 100,
     });
     console.log(JSON.stringify(response, null, 3));
@@ -243,7 +243,7 @@ app.get("/api/cohere/hobbies/:interest", async (req, res) => {
     const { interest } = req.params;
     const response = await cohere.classify({
       inputs: [`${interest}`],
-      model: "de9da453-d1be-4e48-a53e-2e3f6c479361-ft",
+      model: process.env.COHERE_INTERESTS_ATTRACTIONS,
       max_tokens: 100,
     });
     console.log(JSON.stringify(response.body.classifications[0].prediction));
@@ -364,7 +364,7 @@ async function weatherDependent(attractionName) {
     cohere.init(process.env.COHERE_API_KEY);
     const activityArray = [attractionName];
     const response = await cohere.classify({
-      model: "09119595-f5d0-42b8-9ea5-02905414db32-ft",
+      model: process.env.COHERE_ACTIVITY_WEATHER_DEPENDENCY,
       inputs: activityArray,
     });
     const prediction = response.body.classifications[0].prediction;
@@ -379,7 +379,7 @@ async function bestSeason(attractionName) {
     cohere.init(process.env.COHERE_API_KEY);
     const activityArray = [attractionName];
     const response = await cohere.classify({
-      model: "4a6c58b4-7be4-4875-83dd-6a0f23248fec-ft",
+      model: process.env.COHERE_SEASON_ACTIVITIES,
       inputs: activityArray,
     });
 
