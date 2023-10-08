@@ -95,13 +95,18 @@ export const Results = () => {
                 </div>
                 <div className=" h-12 m-2 flex items-center justify-center rounded-full bg-opacity-50 bg-slate-400">
                     <p className="text-2xl text-white">
-                       Flight Choices
+                      Flight Choices
                     </p>
                 </div>
             </div>
         </div>
         <div className="flex basis-1/2 rounded-3xl m-12 bg-stone-300 justify-center text-center">
-            {itinerary}
+          <div className="py-4">
+            Itinerary, in order:
+            {itinerary.map((item, index) => {
+              return <div className="py-2">{index + 1}. {item.slice(3)}</div>
+            })}
+          </div>
         </div>
     </div>
   )

@@ -51,6 +51,15 @@ app.get("/api/itinerary/:countryName", async (req, res) => {
   });
 });
 
+function getTodayDateFormatted() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0'); // months are zero-indexed in JS
+  const day = String(today.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
 app.get("/api/flights/:countryName", async (req, res) => {
   const { countryName } = req.params;
 
@@ -85,7 +94,7 @@ app.get("/api/flights/:countryName", async (req, res) => {
         const curFlights = await flightPlanner(
           departureCode,
           curAirportCode,
-          "2023-12-31"
+          getTodayDateFormatted()
         );
         console.log(curFlights);
         availableFlights = availableFlights.concat(curFlights);
@@ -101,7 +110,7 @@ app.get("/api/flights/:countryName", async (req, res) => {
         const curFlights = await flightPlannerLeastLayover(
           departureCode,
           curAirportCode,
-          "2023-05-08"
+          getTodayDateFormatted()
         );
         console.log(curFlights);
         availableFlightsLeastLayover =
