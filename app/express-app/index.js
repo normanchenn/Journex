@@ -7,6 +7,7 @@ const app = express();
 const cohere = require("cohere-ai");
 const https = require("https");
 const axios = require("axios");
+const PORT = process.env.PORT || 8000;
 
 // const attractionsContent = 
 // `Afghanistan
@@ -2788,7 +2789,6 @@ app.get("/", (req, res) => {
   res.send("Hello World!, from new app");
 });
 
-const PORT = 4321;
 app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}`);
 });
