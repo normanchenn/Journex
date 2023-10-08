@@ -28,7 +28,7 @@ export const Interests = () => {
       }, [interests]);
       const handleSubmit = () => {
         const promises = interests.map(interest =>
-          fetch(`http://localhost:4321/api/cohere/hobbies/${interest}`)
+          fetch(process.env.REACT_APP_BACKEND_URL + `/api/cohere/hobbies/${interest}`)
             .then(response => response.json())
             .catch(error => console.error(error))
         );

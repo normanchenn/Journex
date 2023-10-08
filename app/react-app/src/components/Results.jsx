@@ -16,7 +16,7 @@ export const Results = () => {
         if (cityData){
 
             try {
-              const response = await fetch(`http://localhost:4321/api/itinerary/${cityData.country}`);
+              const response = await fetch(process.env.REACT_APP_BACKEND_URL + `/api/itinerary/${cityData.country}`);
               const data = await response.json();
               console.log("data: " + data);
             //   const arr = data.split(/\d+\./);
@@ -35,7 +35,7 @@ export const Results = () => {
   useEffect(() => {
     const fetchFlights = async () => {
       try {
-        const response = await fetch(`http://localhost:4321/api/flights/${cityData.country}`);
+        const response = await fetch(process.env.REACT_APP_BACKEND_URL + `/api/flights/${cityData.country}`);
         const data = await response.json();
         setFlightOptions(data);
       } catch (error) {

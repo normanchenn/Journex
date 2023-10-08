@@ -25,14 +25,14 @@ export const Inputs = () => {
         console.log(`Name: ${name}`);
       
         try {
-          const response = await fetch(`http://localhost:4321/api/cities/${name}`);
+          const response = await fetch(process.env.REACT_APP_BACKEND_URL + `/api/cities/${name}`);
           const cityData = await response.json();
       
           console.log(cityData);
       
           sessionStorage.setItem("cityData", JSON.stringify(cityData));
       
-          const summaryResponse = await fetch(`http://localhost:4321/api/cohere/citySummary/${name}`);
+          const summaryResponse = await fetch(process.env.REACT_APP_BACKEND_URL + `/api/cohere/citySummary/${name}`);
           const summaryData = await summaryResponse.json();
           
           console.log(summaryData);

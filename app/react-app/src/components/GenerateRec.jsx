@@ -12,7 +12,7 @@ export const GenerateRec = () => {
   const handleSubmit = async () => {
     const responses = await Promise.all(
       interests.map(async (interest) => {
-        const url = `http://localhost:4321/api/cohere/hobbies/${interest}`;
+        const url = process.env.REACT_APP_BACKEND_URL + `/api/cohere/hobbies/${interest}`;
         const response = await fetch(url);
         return response.json();
       })

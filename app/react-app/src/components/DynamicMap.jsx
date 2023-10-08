@@ -54,7 +54,7 @@ const LoadingContainer = () => (
 );
 
 const MapContainerWrapper = GoogleApiWrapper({
-  apiKey: 'AIzaSyDSuUPMgyRXTIgpUIWtBfWOyavLBdXsEJE',
+  apiKey: process.env.REACT_APP_GOOGLE_MAP_API_KEY,
   LoadingContainer: LoadingContainer,
 })(MapContainer);
 

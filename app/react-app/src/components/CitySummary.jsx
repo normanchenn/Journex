@@ -8,7 +8,7 @@ export const CitySummary = () => {
     const handleSubmit = (event) => {
         event.preventDefault();
         console.log(`Name: ${name}`);
-        fetch(`http://localhost:4321/api/cities/${name}`)
+        fetch(process.env.REACT_APP_BACKEND_URL + `/api/cities/${name}`)
             .then(response => response.json())
             .then(data => {
                 console.log(data);
