@@ -9,7 +9,7 @@ import cohere
 from cohere import ClassifyExample
 
 LOW_RISK_DIRECTORIES = ["docs", "documentation", "test", "example"]
-LOW_RISK_EXTENSIONS = ["md", "csv", "txt", "yml", "yaml", "json", "lock"]
+LOW_RISK_EXTENSIONS = ["md", "csv", "txt", "json", "lock"]
 
 @dataclass
 class PRFile:
@@ -24,15 +24,21 @@ class PRFile:
     contents_url: str
     patch: Optional[str] = None
 
-def rank_filenames(files: list[str], api_key: str) -> list[tuple[str, float, str]]:
+def rank_filenames(files: list[PRFile], api_key: str) -> list[tuple[str, float, str]]:
+    """
+    Given a list of PRFile objects, use Cohere Chat API to rank filenames by risk.
+    Returns list of (filename, risk_score, reason), sorted high → low.
+    """
     co = cohere.ClientV2(api_key)
+
+    file_list_str = "\n".join(f.filename for f in files)
 
     prompt = f"""
 You are a code review assistant.
-Given a list of filenames, rank them by how risky they are to application correctness,
-security, and business logic.
+Given a list of filenames, rank them by how risky they are 
+to application correctness, security, and business logic.
 
-Rules examples:
+Rules:
 - High risk: authentication, payments, core business logic, db models/migrations
 - Medium risk: configs, build scripts, CI/CD
 - Low risk: docs, tests, markdown, lockfiles
@@ -40,15 +46,18 @@ Rules examples:
 For each file, return:
 - filename
 - risk_score (0.0 to 1.0, higher = riskier)
-- reason (one short sentence)
+- reason (short sentence)
 
-Return a JSON object with property "files", where files is a list 
-sorted from highest to lowest risk.
+Respond ONLY with a JSON object: {{ "files": [ ... ] }}, 
+where files is sorted highest → lowest risk.
+
+Filenames:
+{file_list_str}
 """
 
     resp = co.chat(
         model="command-a-03-2025",
-        messages=[{"role": "user", "content": prompt + "\nFiles: " + str(files)}],
+        messages=[{"role": "user", "content": prompt}],
         response_format={
             "type": "json_object",
             "json_schema": {
@@ -70,18 +79,13 @@ sorted from highest to lowest risk.
                 "required": ["files"]
             }
         },
-        # max_tokens=300
     )
 
-    print(resp)
-    # Parse JSON content returned by Chat
     data = json.loads(resp.message.content[0].text)
-    print(data)
 
     results: list[tuple[str, float, str]] = []
     for f in data["files"]:
         results.append((f["filename"], float(f["risk_score"]), f["reason"]))
-    print(results)
 
     return results
 
@@ -116,6 +120,34 @@ def get_pr_files(token: str, repo: str, pr_number: int):
     response.raise_for_status()
     return response.json()
 
+# docs = [
+#     "BUILD.bazel",
+#     "pkg/BUILD.bazel",
+#     "pkg/gen/misc.bzl",
+#     "pkg/sql/lexbase/sql-gen.sh",
+#     "pkg/sql/parser/statements/BUILD.bazel",
+#     "pkg/sql/parser/statements/statement.go",
+#     "pkg/sql/plpgsql/parser/BUILD.bazel",
+#     "pkg/sql/scanner/BUILD.bazel",
+#     "pkg/sql/scanner/jsonpath_scan.go",
+#     "pkg/sql/scanner/plpgsql_scan.go",
+#     "pkg/sql/scanner/scan.go",
+#     "pkg/sql/sem/tree/datum.go",
+#     "pkg/testutils/lint/lint_test.go",
+#     "pkg/util/jsonpath/BUILD.bazel",
+#     "pkg/util/jsonpath/expr.go",
+#     "pkg/util/jsonpath/parser/.gitignore",
+#     "pkg/util/jsonpath/parser/BUILD.bazel",
+#     "pkg/util/jsonpath/parser/jsonpath.y",
+#     "pkg/util/jsonpath/parser/lexbase/.gitignore",
+#     "pkg/util/jsonpath/parser/lexbase/BUILD.bazel",
+#     "pkg/util/jsonpath/parser/lexbase/utils.go",
+#     "pkg/util/jsonpath/parser/lexer.go",
+#     "pkg/util/jsonpath/parser/parse.go",
+#     "pkg/util/jsonpath/parser/parser_test.go",
+#     "pkg/util/jsonpath/parser/testdata/jsonpath",
+# ]
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", type=str, required=True, help="Repo name")
@@ -137,44 +169,12 @@ def main():
 
     prDiff = get_pr_files(githubToken, args.repo, args.pr)
     prFiles = load_pr_files(prDiff)
-    # print(prFiles)
-
     filteredPRFiles = filter_low_risk(prFiles)
-    # print(filteredPRFiles)
-
+    rankedPRFiles = rank_filenames(filteredPRFiles, cohere_api_key)
     print(len(prFiles))
     print(len(filteredPRFiles))
-
-    docs = [
-        "BUILD.bazel",
-        "pkg/BUILD.bazel",
-        "pkg/gen/misc.bzl",
-        "pkg/sql/lexbase/sql-gen.sh",
-        "pkg/sql/parser/statements/BUILD.bazel",
-        "pkg/sql/parser/statements/statement.go",
-        "pkg/sql/plpgsql/parser/BUILD.bazel",
-        "pkg/sql/scanner/BUILD.bazel",
-        "pkg/sql/scanner/jsonpath_scan.go",
-        "pkg/sql/scanner/plpgsql_scan.go",
-        "pkg/sql/scanner/scan.go",
-        "pkg/sql/sem/tree/datum.go",
-        "pkg/testutils/lint/lint_test.go",
-        "pkg/util/jsonpath/BUILD.bazel",
-        "pkg/util/jsonpath/expr.go",
-        "pkg/util/jsonpath/parser/.gitignore",
-        "pkg/util/jsonpath/parser/BUILD.bazel",
-        "pkg/util/jsonpath/parser/jsonpath.y",
-        "pkg/util/jsonpath/parser/lexbase/.gitignore",
-        "pkg/util/jsonpath/parser/lexbase/BUILD.bazel",
-        "pkg/util/jsonpath/parser/lexbase/utils.go",
-        "pkg/util/jsonpath/parser/lexer.go",
-        "pkg/util/jsonpath/parser/parse.go",
-        "pkg/util/jsonpath/parser/parser_test.go",
-        "pkg/util/jsonpath/parser/testdata/jsonpath",
-    ]
-    rank_filenames(docs, cohere_api_key)
-    # classify_filenames(docs, cohere_api_key)
-    # rerank_filenames(prFiles, cohere_api_key)
+    print(len(rankedPRFiles))
+    print(rankedPRFiles)
 
     body = f"Testing 1"
     with open(githubOutput, "a") as f:
