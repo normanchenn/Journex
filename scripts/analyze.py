@@ -33,6 +33,33 @@ def rerank_filenames(files: list[PRFile], api_key: str) -> list[tuple[str, float
     docs = []
     for f in files:
         docs.append(f"File: {f.filename} (status={f.status}, +{f.additions}/-{f.deletions})")
+    docs = [
+        "BUILD.bazel",
+        "pkg/BUILD.bazel",
+        "pkg/gen/misc.bzl",
+        "pkg/sql/lexbase/sql-gen.sh",
+        "pkg/sql/parser/statements/BUILD.bazel",
+        "pkg/sql/parser/statements/statement.go",
+        "pkg/sql/plpgsql/parser/BUILD.bazel",
+        "pkg/sql/scanner/BUILD.bazel",
+        "pkg/sql/scanner/jsonpath_scan.go",
+        "pkg/sql/scanner/plpgsql_scan.go",
+        "pkg/sql/scanner/scan.go",
+        "pkg/sql/sem/tree/datum.go",
+        "pkg/testutils/lint/lint_test.go",
+        "pkg/util/jsonpath/BUILD.bazel",
+        "pkg/util/jsonpath/expr.go",
+        "pkg/util/jsonpath/parser/.gitignore",
+        "pkg/util/jsonpath/parser/BUILD.bazel",
+        "pkg/util/jsonpath/parser/jsonpath.y",
+        "pkg/util/jsonpath/parser/lexbase/.gitignore",
+        "pkg/util/jsonpath/parser/lexbase/BUILD.bazel",
+        "pkg/util/jsonpath/parser/lexbase/utils.go",
+        "pkg/util/jsonpath/parser/lexer.go",
+        "pkg/util/jsonpath/parser/parse.go",
+        "pkg/util/jsonpath/parser/parser_test.go",
+        "pkg/util/jsonpath/parser/testdata/jsonpath",
+    ]
 
     # query = "Rank files by how risky they are to application correctness, security, or business logic."
     query = "Find files that are most risky to application correctness, security, and business logic. Test, documentation, text, and markdown files are not that risky."
