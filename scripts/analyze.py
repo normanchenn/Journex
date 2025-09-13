@@ -171,10 +171,9 @@ def main():
     prFiles = load_pr_files(prDiff)
     filteredPRFiles = filter_low_risk(prFiles)
     rankedPRFiles = rank_filenames(filteredPRFiles, cohere_api_key)
-    print(len(prFiles))
-    print(len(filteredPRFiles))
-    print(len(rankedPRFiles))
-    print(rankedPRFiles)
+    print(len(prFiles), [p.filename for p in prFiles])
+    print(len(filteredPRFiles), [p.filename for p in filteredPRFiles])
+    print(len(rankedPRFiles), [p.filename for p in rankedPRFiles])
 
     body = f"Testing 1"
     with open(githubOutput, "a") as f:
