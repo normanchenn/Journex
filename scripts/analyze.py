@@ -38,5 +38,9 @@ def main():
     print(f"📌 PR number: {args.pr}")
     print(get_pr_files(args.repo, args.pr))
 
+    body = f"Testing"
+    with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+        f.write(f"comment<<EOF\n{body}\nEOF\n")
+
 if __name__ == "__main__":
     main()
