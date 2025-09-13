@@ -24,10 +24,10 @@ class PRFile:
     contents_url: str
     patch: Optional[str] = None
 
-def rank_filenames(files: list[PRFile], api_key: str) -> list[tuple[str, float, str]]:
+def rank_filenames(files: list[PRFile], api_key: str) -> list[tuple[PRFile, float, str]]:
     """
-    Given a list of PRFile objects, use Cohere Chat API to rank filenames by risk.
-    Returns list of (filename, risk_score, reason), sorted high → low.
+    Given a list of PRFile objects, use Cohere Chat API to rank them by risk.
+    Returns list of (PRFile, risk_score, reason), sorted high → low.
     """
     co = cohere.ClientV2(api_key)
 
@@ -83,9 +83,16 @@ Filenames:
 
     data = json.loads(resp.message.content[0].text)
 
-    results: list[tuple[str, float, str]] = []
+    filename_to_prfile = {f.filename: f for f in files}
+
+    results: list[tuple[PRFile, float, str]] = []
     for f in data["files"]:
-        results.append((f["filename"], float(f["risk_score"]), f["reason"]))
+        fname = f["filename"]
+        score = float(f["risk_score"])
+        reason = f["reason"]
+        prfile = filename_to_prfile.get(fname)
+        if prfile:
+            results.append((prfile, score, reason))
 
     return results
 
