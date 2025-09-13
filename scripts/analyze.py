@@ -28,7 +28,7 @@ def is_low_risk_file(prfile: PRFile) -> bool:
         if d in filename:
             return True
     
-    _, ext = os.path.splitext(fname)
+    _, ext = os.path.splitext(filename)
     if ext and ext.startswith("."):
         ext = ext[1:]
     if ext in LOW_RISK_EXTENSIONS:
