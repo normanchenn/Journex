@@ -30,9 +30,9 @@ def rerank_filenames(files: list[PRFile], api_key: str) -> list[tuple[str, float
     co = cohere.ClientV2(api_key)
 
     # Build document list with some inline hints for better context
-    docs = []
-    for f in files:
-        docs.append(f"File: {f.filename} (status={f.status}, +{f.additions}/-{f.deletions})")
+    # docs = []
+    # for f in files:
+    #     docs.append(f"File: {f.filename} (status={f.status}, +{f.additions}/-{f.deletions})")
     docs = [
         "BUILD.bazel",
         "pkg/BUILD.bazel",
@@ -75,7 +75,7 @@ def rerank_filenames(files: list[PRFile], api_key: str) -> list[tuple[str, float
 
     results = []
     for r in response.results:
-        results.append((files[r.index].filename, r.relevance_score))
+        results.append((files[r.index], r.relevance_score))
     print(results)
 
     return results
