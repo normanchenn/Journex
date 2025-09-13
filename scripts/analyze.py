@@ -4,6 +4,7 @@ import os
 import requests
 from dataclasses import dataclass
 from typing import Optional
+import cohere
 
 LOW_RISK_DIRECTORIES = ["docs", "documentation", "test", "example"]
 LOW_RISK_EXTENSIONS = ["md", "csv", "txt", "yml", "yaml", "json", "lock"]
@@ -20,6 +21,37 @@ class PRFile:
     raw_url: str
     contents_url: str
     patch: Optional[str] = None
+
+def rerank_filenames(files: list[PRFile], api_key: str) -> list[tuple[str, float]]:
+    """
+    Use Cohere Rerank API (v2) to rank filenames by semantic 'riskiness'.
+    Returns a list of (filename, score), highest first.
+    """
+    co = cohere.ClientV2(api_key)
+
+    # Build document list with some inline hints for better context
+    docs = []
+    for f in files:
+        docs.append(f"File: {f.filename} (status={f.status}, +{f.additions}/-{f.deletions})")
+
+    # query = "Rank files by how risky they are to application correctness, security, or business logic."
+    query = "Find files that are most risky to application correctness, security, and business logic."
+
+    print(docs)
+    response = co.rerank(
+        model="rerank-v3.5",
+        query=query,
+        documents=docs,
+        top_n=len(docs)
+    )
+    print(response)
+
+    results = []
+    for r in response.results:
+        results.append((files[r.index].filename, r.relevance_score))
+    print(results)
+
+    return results
 
 def is_low_risk_file(prfile: PRFile) -> bool:
     filename = prfile.filename.lower()
@@ -64,19 +96,24 @@ def main():
     githubOutput = os.environ.get("GITHUB_OUTPUT")
     if not githubOutput:
         raise RuntimeError("Missing GITHUB_OUTPUT environment variable")
+    cohere_api_key = os.environ.get("COHERE_API_KEY")
+    if not cohere_api_key:
+        raise RuntimeError("Missing COHERE_API_KEY environment variable")
 
     print(f"Repo: {args.repo}")
     print(f"PR: {args.pr}")
 
     prDiff = get_pr_files(githubToken, args.repo, args.pr)
     prFiles = load_pr_files(prDiff)
-    print(prFiles)
+    # print(prFiles)
 
     filteredPRFiles = filter_low_risk(prFiles)
-    print(filteredPRFiles)
+    # print(filteredPRFiles)
 
     print(len(prFiles))
     print(len(filteredPRFiles))
+
+    rerank_filenames(prFiles, cohere_api_key)
 
     body = f"Testing 1"
     with open(githubOutput, "a") as f:

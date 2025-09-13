@@ -28,6 +28,7 @@ jobs:
         run: python scripts/analyze.py --repo ${{ github.repository }} --pr ${{ github.event.pull_request.number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
 
       - name: Comment results
         uses: marocchino/sticky-pull-request-comment@v2
