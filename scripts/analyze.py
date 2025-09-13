@@ -35,7 +35,7 @@ def rerank_filenames(files: list[PRFile], api_key: str) -> list[tuple[str, float
         docs.append(f"File: {f.filename} (status={f.status}, +{f.additions}/-{f.deletions})")
 
     # query = "Rank files by how risky they are to application correctness, security, or business logic."
-    query = "Find files that are most risky to application correctness, security, and business logic."
+    query = "Find files that are most risky to application correctness, security, and business logic. Test, documentation, text, and markdown files are not that risky."
 
     print(docs)
     response = co.rerank(
