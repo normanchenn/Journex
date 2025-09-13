@@ -70,7 +70,7 @@ sorted from highest to lowest risk.
                 "required": ["files"]
             }
         },
-        max_tokens=300
+        # max_tokens=300
     )
 
     print(resp)
