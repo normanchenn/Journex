@@ -1,0 +1,24 @@
+name: Priority
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  priority:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Run script
+        id: analyze
+        run: python scripts/analyze.py --repo ${{ github.repository }} --pr ${{ github.event.pull_request.number }}
