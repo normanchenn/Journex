@@ -75,7 +75,7 @@ def rerank_filenames(files: list[PRFile], api_key: str) -> list[tuple[str, float
 
     results = []
     for r in response.results:
-        results.append((files[r.index], r.relevance_score))
+        results.append((docs[r.index], r.relevance_score))
     print(results)
 
     return results
