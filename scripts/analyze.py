@@ -4,7 +4,6 @@ import os
 import requests
 from dataclasses import dataclass
 from typing import Optional
-import json
 
 @dataclass
 class PRFile:
@@ -20,7 +19,6 @@ class PRFile:
     patch: Optional[str] = None
 
 def load_pr_files(pr_json_data: str) -> list[PRFile]:
-    raw_list = json.loads(pr_json_data)
     return [PRFile(**item) for item in raw_list]
 
 def get_pr_files(token: str, repo: str, pr_number: int):
