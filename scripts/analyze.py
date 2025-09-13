@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import argparse
 import os
 import requests
@@ -23,43 +24,65 @@ class PRFile:
     contents_url: str
     patch: Optional[str] = None
 
-def classify_filenames(files: list[str], api_key: str) -> list[tuple[str, str, float]]:
-    """
-    Use Cohere's Classify API to assign filenames into High, Medium, or Low risk.
-    Returns a list of (filename, predicted_label, confidence).
-    """
-    co = cohere.Client(api_key)
+def rank_filenames(files: list[str], api_key: str) -> list[tuple[str, float, str]]:
+    co = cohere.ClientV2(api_key)
 
-    # Define examples for each bucket
-    examples = [
-        # Low Risk
-        ClassifyExample(text="docs/usage.md", label="Low Risk"),
-        ClassifyExample(text="tests/test_auth.py", label="Low Risk"),
-        ClassifyExample(text="README.md", label="Low Risk"),
-        ClassifyExample(text="package-lock.json", label="Low Risk"),
+    prompt = f"""
+You are a code review assistant.
+Given a list of filenames, rank them by how risky they are to application correctness,
+security, and business logic.
 
-        # Medium Risk
-        ClassifyExample(text=".github/workflows/ci.yml", label="Medium Risk"),
-        ClassifyExample(text="config/routes.yaml", label="Medium Risk"),
-        ClassifyExample(text="scripts/deploy.sh", label="Medium Risk"),
+Rules examples:
+- High risk: authentication, payments, core business logic, db models/migrations
+- Medium risk: configs, build scripts, CI/CD
+- Low risk: docs, tests, markdown, lockfiles
 
-        # High Risk
-        ClassifyExample(text="src/auth/login.py", label="High Risk"),
-        ClassifyExample(text="core/payment.js", label="High Risk"),
-        ClassifyExample(text="db/migrations/001-init.sql", label="High Risk"),
-        ClassifyExample(text="src/models/user.py", label="High Risk"),
-    ]
+For each file, return:
+- filename
+- risk_score (0.0 to 1.0, higher = riskier)
+- reason (one short sentence)
 
-    # Call Cohere Classify
-    response = co.classify(
-        model="large",
-        inputs=files,
-        examples=examples
+Return a JSON object with property "files", where files is a list 
+sorted from highest to lowest risk.
+"""
+
+    resp = co.chat(
+        model="command-a-03-2025",
+        messages=[{"role": "user", "content": prompt + "\nFiles: " + str(files)}],
+        response_format={
+            "type": "json_object",
+            "json_schema": {
+                "type": "object",
+                "properties": {
+                    "files": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "filename": {"type": "string"},
+                                "risk_score": {"type": "number"},
+                                "reason": {"type": "string"}
+                            },
+                            "required": ["filename", "risk_score", "reason"]
+                        }
+                    }
+                },
+                "required": ["files"]
+            }
+        },
+        max_tokens=300
     )
 
-    results = []
-    for c in response.classifications:
-        results.append((c.input, c.prediction, c.confidence))
+    print(resp)
+    # Parse JSON content returned by Chat
+    data = json.loads(resp.message.content[0].text)
+    print(data)
+
+    results: list[tuple[str, float, str]] = []
+    for f in data["files"]:
+        results.append((f["filename"], float(f["risk_score"]), f["reason"]))
+    print(results)
+
     return results
 
 def is_low_risk_file(prfile: PRFile) -> bool:
@@ -149,7 +172,8 @@ def main():
         "pkg/util/jsonpath/parser/parser_test.go",
         "pkg/util/jsonpath/parser/testdata/jsonpath",
     ]
-    classify_filenames(docs, cohere_api_key)
+    rank_filenames(docs, cohere_api_key)
+    # classify_filenames(docs, cohere_api_key)
     # rerank_filenames(prFiles, cohere_api_key)
 
     body = f"Testing 1"
