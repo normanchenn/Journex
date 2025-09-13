@@ -19,7 +19,7 @@ class PRFile:
     patch: Optional[str] = None
 
 def load_pr_files(pr_json_data: str) -> list[PRFile]:
-    return [PRFile(**item) for item in raw_list]
+    return [PRFile(**item) for item in pr_json_data]
 
 def get_pr_files(token: str, repo: str, pr_number: int):
     url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}/files"
