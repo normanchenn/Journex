@@ -28,6 +28,7 @@ def get_pr_files(repo: str, pr_number: int):
     response.raise_for_status()  # raise error if request failed
 
     return response.json()
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", required=True, help="Repo name")
