@@ -5,6 +5,7 @@ import requests
 from dataclasses import dataclass
 from typing import Optional
 import cohere
+from cohere import ClassifyExample
 
 LOW_RISK_DIRECTORIES = ["docs", "documentation", "test", "example"]
 LOW_RISK_EXTENSIONS = ["md", "csv", "txt", "yml", "yaml", "json", "lock"]
@@ -22,62 +23,43 @@ class PRFile:
     contents_url: str
     patch: Optional[str] = None
 
-def rerank_filenames(files: list[PRFile], api_key: str) -> list[tuple[str, float]]:
+def classify_filenames(files: list[str], api_key: str) -> list[tuple[str, str, float]]:
     """
-    Use Cohere Rerank API (v2) to rank filenames by semantic 'riskiness'.
-    Returns a list of (filename, score), highest first.
+    Use Cohere's Classify API to assign filenames into High, Medium, or Low risk.
+    Returns a list of (filename, predicted_label, confidence).
     """
-    co = cohere.ClientV2(api_key)
+    co = cohere.Client(api_key)
 
-    # Build document list with some inline hints for better context
-    # docs = []
-    # for f in files:
-    #     docs.append(f"File: {f.filename} (status={f.status}, +{f.additions}/-{f.deletions})")
-    docs = [
-        "BUILD.bazel",
-        "pkg/BUILD.bazel",
-        "pkg/gen/misc.bzl",
-        "pkg/sql/lexbase/sql-gen.sh",
-        "pkg/sql/parser/statements/BUILD.bazel",
-        "pkg/sql/parser/statements/statement.go",
-        "pkg/sql/plpgsql/parser/BUILD.bazel",
-        "pkg/sql/scanner/BUILD.bazel",
-        "pkg/sql/scanner/jsonpath_scan.go",
-        "pkg/sql/scanner/plpgsql_scan.go",
-        "pkg/sql/scanner/scan.go",
-        "pkg/sql/sem/tree/datum.go",
-        "pkg/testutils/lint/lint_test.go",
-        "pkg/util/jsonpath/BUILD.bazel",
-        "pkg/util/jsonpath/expr.go",
-        "pkg/util/jsonpath/parser/.gitignore",
-        "pkg/util/jsonpath/parser/BUILD.bazel",
-        "pkg/util/jsonpath/parser/jsonpath.y",
-        "pkg/util/jsonpath/parser/lexbase/.gitignore",
-        "pkg/util/jsonpath/parser/lexbase/BUILD.bazel",
-        "pkg/util/jsonpath/parser/lexbase/utils.go",
-        "pkg/util/jsonpath/parser/lexer.go",
-        "pkg/util/jsonpath/parser/parse.go",
-        "pkg/util/jsonpath/parser/parser_test.go",
-        "pkg/util/jsonpath/parser/testdata/jsonpath",
+    # Define examples for each bucket
+    examples = [
+        # Low Risk
+        ClassifyExample(text="docs/usage.md", label="Low Risk"),
+        ClassifyExample(text="tests/test_auth.py", label="Low Risk"),
+        ClassifyExample(text="README.md", label="Low Risk"),
+        ClassifyExample(text="package-lock.json", label="Low Risk"),
+
+        # Medium Risk
+        ClassifyExample(text=".github/workflows/ci.yml", label="Medium Risk"),
+        ClassifyExample(text="config/routes.yaml", label="Medium Risk"),
+        ClassifyExample(text="scripts/deploy.sh", label="Medium Risk"),
+
+        # High Risk
+        ClassifyExample(text="src/auth/login.py", label="High Risk"),
+        ClassifyExample(text="core/payment.js", label="High Risk"),
+        ClassifyExample(text="db/migrations/001-init.sql", label="High Risk"),
+        ClassifyExample(text="src/models/user.py", label="High Risk"),
     ]
 
-    # query = "Rank files by how risky they are to application correctness, security, or business logic."
-    query = "Find files that are most risky to application correctness, security, and business logic. Test, documentation, text, and markdown files are not that risky."
-
-    print(docs)
-    response = co.rerank(
-        model="rerank-v3.5",
-        query=query,
-        documents=docs,
-        top_n=len(docs)
+    # Call Cohere Classify
+    response = co.classify(
+        model="large",
+        inputs=files,
+        examples=examples
     )
-    print(response)
 
     results = []
-    for r in response.results:
-        results.append((docs[r.index], r.relevance_score))
-    print(results)
-
+    for c in response.classifications:
+        results.append((c.input, c.prediction, c.confidence))
     return results
 
 def is_low_risk_file(prfile: PRFile) -> bool:
@@ -140,7 +122,35 @@ def main():
     print(len(prFiles))
     print(len(filteredPRFiles))
 
-    rerank_filenames(prFiles, cohere_api_key)
+    docs = [
+        "BUILD.bazel",
+        "pkg/BUILD.bazel",
+        "pkg/gen/misc.bzl",
+        "pkg/sql/lexbase/sql-gen.sh",
+        "pkg/sql/parser/statements/BUILD.bazel",
+        "pkg/sql/parser/statements/statement.go",
+        "pkg/sql/plpgsql/parser/BUILD.bazel",
+        "pkg/sql/scanner/BUILD.bazel",
+        "pkg/sql/scanner/jsonpath_scan.go",
+        "pkg/sql/scanner/plpgsql_scan.go",
+        "pkg/sql/scanner/scan.go",
+        "pkg/sql/sem/tree/datum.go",
+        "pkg/testutils/lint/lint_test.go",
+        "pkg/util/jsonpath/BUILD.bazel",
+        "pkg/util/jsonpath/expr.go",
+        "pkg/util/jsonpath/parser/.gitignore",
+        "pkg/util/jsonpath/parser/BUILD.bazel",
+        "pkg/util/jsonpath/parser/jsonpath.y",
+        "pkg/util/jsonpath/parser/lexbase/.gitignore",
+        "pkg/util/jsonpath/parser/lexbase/BUILD.bazel",
+        "pkg/util/jsonpath/parser/lexbase/utils.go",
+        "pkg/util/jsonpath/parser/lexer.go",
+        "pkg/util/jsonpath/parser/parse.go",
+        "pkg/util/jsonpath/parser/parser_test.go",
+        "pkg/util/jsonpath/parser/testdata/jsonpath",
+    ]
+    classify_filenames(docs, cohere_api_key)
+    # rerank_filenames(prFiles, cohere_api_key)
 
     body = f"Testing 1"
     with open(githubOutput, "a") as f:
