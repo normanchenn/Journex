@@ -2,6 +2,26 @@
 import argparse
 import os
 import requests
+from dataclasses import dataclass
+from typing import Optional
+import json
+
+@dataclass
+class PRFile:
+    sha: str
+    filename: str
+    status: str
+    additions: int
+    deletions: int
+    changes: int
+    blob_url: str
+    raw_url: str
+    contents_url: str
+    patch: Optional[str] = None
+
+def load_pr_files(pr_json_data: str) -> list[PRFile]:
+    raw_list = json.loads(pr_json_data)
+    return [PRFile(**item) for item in raw_list]
 
 def get_pr_files(token: str, repo: str, pr_number: int):
     url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}/files"
@@ -29,8 +49,9 @@ def main():
     print(f"Repo: {args.repo}")
     print(f"PR: {args.pr}")
 
-    prContent = get_pr_files(githubToken, args.repo, args.pr)
-    print(prContent)
+    prDiff = get_pr_files(githubToken, args.repo, args.pr)
+    prFiles = load_pr_files(prDiff)
+    print(prFiles)
 
     body = f"Testing 1"
     with open(githubOutput, "a") as f:
@@ -38,3 +59,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+"""
+- string matching/classification on filepaths (high risk vs low risk)
+- filenames (extensions)
+"""
